@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        SEC_HTTPS = true;
+        SEC_BASE = "compilers.widgets.sphere-engine.com"; 
+        (function(d, s, id){ SEC = window.SEC || (window.SEC = []);
+          var js, fjs = d.getElementsByTagName(s)[0];
+          if (d.getElementById(id)) return; js = d.createElement(s); js.id = id; 
+          js.src = (SEC_HTTPS ? "https" : "http") + "://" + SEC_BASE + "/static/sdk/sdk.js";
+          fjs.parentNode.insertBefore(js, fjs);   
+        }(document, "script", "sphere-engine-compilers-jssdk"));
+        </script>
+        <div class="sec-widget" css="height: 500px;" data-widget="e07d213b7822ea919599a1f4cd5182c5"></div>
+</body>
+</html>
