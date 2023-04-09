@@ -21,8 +21,8 @@ app.config['MYSQL_PORT'] = 3306
 app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'oeps'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-email_sender = "jogimalay11@gmail.com"
-email_password = "aljyzdlnspczokwu"
+email_sender = "malayjogi44@gmail.com"
+email_password = "pyvskldepnljhlmt"
 
 mysql = MySQL(app)
 em = EmailMessage()
@@ -224,21 +224,185 @@ def give_tests():
 @app.route("/testquiz", methods=["POST", "GET"])
 @cross_origin(supports_credentials=True)
 def test_quiz():
+    session["changelog"] = 0
     test_id = session["testid"]
-    print("hello")
     qid = request.form.get("qid")
-    print("world")
+
+    cur = mysql.connection.cursor()
+    cur2 = mysql.connection.cursor()
+    results = cur.execute(
+        "Select qu.examid,qu.uid,qu.qid,qu.q,qu.a,qu.b,qu.c,qu.d,qu.ans,qu.marks,e.subject,e.topic from questions qu inner join exam e on qu.examid=e.examid where qu.examid = %s and qu.qid=%s", (test_id, qid))
+    results2 = cur2.execute(
+        "Select MAX(CAST(qid as INT)) AS maxqid from questions")
+    data2 = cur2.fetchone()
+    if results > 0:
+        data = cur.fetchone()
+
+        del data['ans']
+        print("MAXQID", (data2["maxqid"] + 1))
+        return jsonify({"testid": test_id, "data": data, "maxqid": data2["maxqid"] + 1, "email": session.get('email')})
+    else:
+
+        return jsonify({"testid": test_id, "maxqid": data2["maxqid"] + 1})
+
+
+@app.route("/submitquiz", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def submitquiz():
+    data = request.json["answer"]
+    test_id = session["testid"]
+    cur = mysql.connection.cursor()
+    qid = []
+    qqid = []
+    option = []
+    ans = []
+    marks = []
+    mark = []
+    totalmarks = 0
+    for k in data:
+        qqid.append(k["qid"])
+        option.append(k["option"])
+
+    print(qqid)
+    print(option)
+    results = cur.execute(
+        "Select cast(qid as INT) as qid,marks,ans from questions where examid = '"+test_id+"'")
+    if results > 0:
+        datas = cur.fetchall()
+        for i in datas:
+            qid.append(i["qid"])
+            ans.append(i["ans"])
+            marks.append(i["marks"])
+        print("QID FROM DATABASE:", qid)
+        print("ANS FROM DATABASE:", ans)
+        print("MARKS FROM DATABASE:", marks)
+
+        for j in range(len(qqid)):
+            if qqid[j] == qid[j]:
+                if option[j] == ans[j]:
+                    mark.append(marks[j])
+        for t in mark:
+            totalmarks += t
+
+        cur2 = mysql.connection.cursor()
+        results2 = cur2.execute("INSERT INTO results values(%s,%s,%s)",
+                                (session.get('email'), test_id, totalmarks))
+
+        mysql.connection.commit()
+        if results2 > 0:
+            return jsonify({"answer": "fetched"})
+
+
+@app.route("/weblog", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def weblog():
+    test_id = session["testid"]
+    email = session["email"]
+    tracker = request.json["weblog"]
     cur = mysql.connection.cursor()
 
     results = cur.execute(
-        "Select qu.examid,qu.uid,qu.qid,qu.q,qu.a,qu.b,qu.c,qu.d,qu.ans,qu.marks,e.subject,e.topic from questions qu inner join exam e on qu.examid=e.examid where qu.examid = %s and qu.qid=%s", (test_id, qid))
-
+        "Select * from weblog where uid = %s and examid=%s", (email, test_id))
     if results > 0:
-        data = cur.fetchone()
-        del data['ans']
-        return jsonify({"testid": test_id, "data": data})
+        cur2 = mysql.connection.cursor()
+        cur2.execute("Update weblog set tracker= %s where uid = %s and examid=%s",
+                     (tracker, email, test_id))
+    else:
+        cur2 = mysql.connection.cursor()
+        cur2.execute("Insert into weblog values(%s,%s,%s)",
+                     (email, test_id, tracker))
+    mysql.connection.commit()
 
-    return
+    return jsonify({"success": True})
+
+
+@app.route("/updatequestion", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def updatequestion():
+    test_id = request.json["ExamId"]
+    email = session["email"]
+    cur = mysql.connection.cursor()
+    results = cur.execute(
+        "Select * from questions where examid = %s and uid = %s", (test_id, email))
+    if results > 0:
+        data = cur.fetchall()
+        qid = []
+        question = []
+        a = []
+        b = []
+        c = []
+        d = []
+        marks = []
+        ans = []
+        for i in data:
+            qid.append(i['qid'])
+            question.append(i['q'])
+            marks.append(i['marks'])
+            a.append(i['a'])
+            b.append(i['b'])
+            c.append(i['c'])
+            d.append(i['d'])
+            ans.append(i['ans'])
+
+        return jsonify({"qid": qid, "q": question, "a": a, "b": b, "c": c, "d": d, "ans": ans, "marks": marks})
+
+
+@app.route("/selectquestion", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def selectquestion():
+    test_id = request.json["ExamId"]
+    qid = request.json["qid"]
+    cur = mysql.connection.cursor()
+    result = cur.execute(
+        "SELECT * from questions where qid = %s and examid = %s and uid = %s", (qid, test_id, session["email"]))
+    if result > 0:
+        data = cur.fetchone()
+        return jsonify({
+            "qid": data["qid"],
+            "question": data["q"],
+            "answer": data["ans"],
+            "a": data["a"],
+            "b": data["b"],
+            "c": data["c"],
+            "d": data["d"],
+            "marks": data["marks"]
+        })
+    else:
+        return jsonify({"error": "Not found"})
+
+
+@app.route("/updatedquestion", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def updatedquestion():
+    testid = request.json["ExamId"]
+    qid = request.json["qid"]
+    question = request.json["selectedquestion"]
+    answer = request.json["selectedAnswer"]
+    optiona = request.json["selectedoptiona"]
+    optionb = request.json["selectedoptionb"]
+    optionc = request.json["selectedoptionc"]
+    optiond = request.json["selectedoptiond"]
+    marks = request.json["selectedmarks"]
+
+    cur = mysql.connection.cursor()
+    cur.execute("Update questions set q = %s, ans=%s, a=%s,b=%s,c=%s,d=%s,marks=%s where qid = %s and examid = %s and uid= %s",
+                (question, answer, optiona, optionb, optionc, optiond, marks, qid, testid, session["email"]))
+    mysql.connection.commit()
+    cur2 = mysql.connection.cursor()
+    results = cur2.execute(
+        "Select * from questions where qid=%s and examid=%s and uid=%s", (qid, testid, session["email"]))
+    if results > 0:
+        data = cur2.fetchone()
+        return jsonify({
+            "qid": data["qid"],
+            "question": data["q"],
+            "answer": data["ans"],
+            "a": data["a"],
+            "b": data["b"],
+            "c": data["c"],
+            "d": data["d"],
+            "marks": data["marks"]
+        })
 
 
 if __name__ == "__main__":

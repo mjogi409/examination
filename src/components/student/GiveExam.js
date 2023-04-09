@@ -25,7 +25,7 @@ export default function GiveExam() {
 
   }
   return (
-    <div className='row' style={{'margin-left': 0}}><Sidebar/>
+    <div className='row' style={{'marginLeft': 0}}><Sidebar/>
       <div className="text-center text-md-center mb-4 mt-md-0">
         <h1 className="mb-0 h3">Give Exam</h1>
       </div>

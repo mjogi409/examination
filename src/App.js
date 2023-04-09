@@ -2,7 +2,6 @@
 import './App.css';
 import React from 'react';
 import './index.css';
-
 import { Routes, Route } from'react-router-dom';
 import Login from './components/login/Login';
 import Header from './components/home/Header';
@@ -17,8 +16,8 @@ import GenerateQuestion from './components/student/GenerateQuestion';
 import Home from './components/home/Home';
 import Logout from './components/student/Logout';
 import CreateExam from './components/student/CreateExam';
-import Testquiz from './components/testquizz/Testquiz';
-
+import Testquiz from './components/testquiz/testquiz';
+import Updatequestion from './components/update/Updatequestion';
 
 function App() {
   
@@ -42,7 +41,7 @@ function App() {
     <Route path="/profDashboard" element={<professorDashboard/>}/>
     <Route path="/GenerateQuestion" element={<GenerateQuestion/>}/>
     <Route path="/logout" element={<Logout/>}/>
-    
+    <Route path="/UpdateQuestion" element={<Updatequestion/>}/>
     <Route path="/testquiz" element={<Testquiz/>}/>
     <Route path="/CreateExam" element={<CreateExam/>}/>
     </Routes>

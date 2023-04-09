@@ -1,40 +1,75 @@
 import React,{useState, useEffect} from 'react'
 
 import axios from 'axios'
+import HttpClient from '../HttpClient'
 
 export default function Testquiz() {
- const [selectedoption, setSelectedOption] = useState(null)
- const [name, setName]= useState(null)
+var timeoutId;
+let weblog = 0;
+function handleVisibilityChange() {
+  clearTimeout(timeoutId);
+  timeoutId = setTimeout(function() {
+    if(document.visibilityState === "hidden")
+    {
+      weblog += 1;
+      HttpClient.post("//localhost:5000/weblog",{weblog})  
+      
+    }
+  }, 100);
+}
+  document.addEventListener("visibilitychange",handleVisibilityChange)
+ const [selectedoption, setSelectedOption] = useState()
+ 
  const [email, setEmail]= useState(null)
  const [subject, setSubject]= useState(null)
  const [topic, setTopic]= useState(null)
  const [examid, setExamid]= useState(null)
  const [qid,setQid]= useState(1)
+ const [answer,setAnswers] = useState([])
  const [q,setQ] = useState(null)
  const [a,setA]= useState(null)
  const [b,setB]= useState(null)
  const [c,setC]= useState(null)
  const [d,setD]= useState(null)
- const [ans,setAns] = useState(null)
  const [marks,setMarks] = useState(null)
-
+ 
  const formdata = new FormData()
-  const next = async()=>{
-    formdata.append("option",selectedoption)
-    formdata.append("qid",qid)
-    formdata.append("email",email)
-    await axios.post("//localhost:5000/submitquiz",formdata,{
-      withCredentials: true,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }).then(response=>console.log(response))
+  const next = async ()=>{
+    if(selectedoption === undefined || selectedoption === null)
+    {
+      alert("select an option")
+    }
+    else
+    {
+    
+    console.log(selectedoption)    
+    setAnswers([...answer,{
+      qid : qid,
+      option: selectedoption
+    }])
+    setSelectedOption(null)
     setQid(parseInt(qid) + 1)
-    console.log(qid)
+    console.log(answer)
+    
+    
+    }
+    
   }
-  const prev = ()=>{
-    setQid(parseInt(qid) - 1)
+  const finish = async()=>{
+  
+  setAnswers([...answer,{
+    qid : qid,
+    option: selectedoption
+  }])
+  console.log(answer)
+  await HttpClient.post("//localhost:5000/submitquiz",{answer})
+  .then((response)=> console.log(response))
+  window.location.href = "/GiveExam";
   }
+  // window.onbeforeunload = function () {
+    
+  //   return false;
+  // }
  useEffect(()=>{
     const submitted = async()=>{
       formdata.append("qid",qid)
@@ -44,23 +79,30 @@ export default function Testquiz() {
             'Content-Type': 'multipart/form-data',
           },
         }).then((response)=>{
+          
+          if(response.data["maxqid"] === qid)
+          {
+            finish();
+          }
+          else
+          {
           setA(response.data["data"]["a"])
           setB(response.data["data"]["b"])
           setC(response.data["data"]["c"])
           setD(response.data["data"]["d"])
-          setQid(response.data["data"]["qid"])
           setExamid(response.data["data"]["examid"])
           setMarks(response.data["data"]["marks"])
           setQ(response.data["data"]["q"])
           setSubject(response.data["data"]["subject"])
           setTopic(response.data["data"]["topic"])
-          setEmail(response.data["data"]["uid"])
-        
+          setEmail(response.data["email"])
+          console.log(qid)
+          }
         } 
       )}
       submitted()
-  })
-  
+  },[qid])
+
 
   return (
     <div>
@@ -141,29 +183,16 @@ export default function Testquiz() {
                     </tbody></table>
                 </div>
                 <div className="row">
+                 
                   <div className="form-group col-3">
-                    <div className="mb-0 h6">
-                      <input type="button" defaultValue="Prev" id="prev" onClick={()=>prev()} className="btn btn-primary btn-rounded" />
+                    <div className="mb-5 h6">
+                      <input type="button" defaultValue="Next" id="next"  onClick={()=>next()} className="btn btn-primary btn-rounded" />
                     </div>
                   </div>
-                  <div className="form-group col-3">
-                    <div className="mb-0 h6">
-                      <input type="button" defaultValue="Next" id="next" onClick={()=>next()} className="btn btn-primary btn-rounded" />
-                    </div>
-                  </div>
-                  <div className="form-group col-3">
-                    <div className="mb-0 h6">
-                      <input type="button" defaultValue="Submit" id="submit" className="btn btn-success btn-rounded" />
-                    </div>
-                  </div>
-                  <div className="form-group col-3">
-                    <div className="mb-0 h6">
-                      <button className="btn btn-primary btn-rounded" id="bookmark">Bookmark</button>
-                    </div>
-                  </div>
+                 
                 </div>
                 <div className="form-group">
-                  <div className="btn btn-block btn-primary" id="finish">Finish Test</div>
+                  <div className="btn btn-block btn-primary" id="finish" onClick={()=>finish()}>Finish Test</div>
                 </div>
                 
                 <div className="form-group">

@@ -1,6 +1,7 @@
-import React,{useState} from 'react'
+import React,{useState,useEffect} from 'react'
 import HttpClient from '../HttpClient';
 import Sidebar from './Sidebar'
+import DataTables from 'datatables.net-dt';
 export default function GenerateQuestion() {
   const [itext,setItext] = useState(null);
   const [noq, setNoq] = useState(0);
@@ -9,8 +10,7 @@ export default function GenerateQuestion() {
   let renderedData;
   const generateqna = async ()=>{
   const resp = await HttpClient.post("//localhost:5000/test_generate",{itext,noq}) 
-  console.log(resp.data["question"]);
-  console.log(resp.data["answer"]);
+  
   setQuestion(resp.data["question"])
   setAnswer(resp.data["answer"])
   };
@@ -32,6 +32,9 @@ export default function GenerateQuestion() {
   else{
     renderedData = null;
   }
+  useEffect(()=>{
+    let table = new DataTables("table")
+  })
   
          
   
@@ -97,5 +100,6 @@ export default function GenerateQuestion() {
           
       )}
     </div>
+      
   )
 }
