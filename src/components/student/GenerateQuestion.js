@@ -96,8 +96,7 @@ export default function GenerateQuestion() {
             </div>
           </div>
         </div>
-      </div>  
-          
+      </div>
       )}
     </div>
       

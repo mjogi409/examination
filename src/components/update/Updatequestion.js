@@ -51,6 +51,7 @@ const updatequestions = async (qid)=>{
         setSelectedOptionc(response.data["c"])
         setSelectedOptiond(response.data["d"])
         setSelectedmarks(response.data["marks"])
+        
     })
 }   
 useEffect(function(){
@@ -190,8 +191,7 @@ return (
    
 
     <div className="card-body">
-      <form action="Exam" method="POST" className="mt-4">
-        
+      
     
         <div className="form-group">
           <label htmlFor="EXAMID">Update Exam</label>
@@ -214,7 +214,6 @@ return (
           
         </div>
         
-        </form>
   </div>
   </div>
   </div>)

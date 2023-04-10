@@ -9,7 +9,9 @@ import {
     FaQuestion,
     FaAtom,
     FaUikit,
-    FaDotCircle
+    FaDotCircle,
+    FaAlgolia,
+    FaLeaf
 }from "react-icons/fa";
 import { NavLink } from 'react-router-dom';
 
@@ -52,6 +54,11 @@ const Sidebar = ({children}) => {
             path:"/Result",
             name:"Results",
             icon:<FaRegChartBar/>
+        },
+        {
+            path:"/Weblogs",
+            name:"Weblogs",
+            icon:<FaLeaf/>
         },
         {path:"/Logout",
         name:"Logout",

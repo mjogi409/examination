@@ -116,6 +116,8 @@ def login_user():
 @app.route("/logout", methods=["POST"])
 @cross_origin(supports_credentials=True)
 def logout_user():
+    if em["To"]:
+        del em["To"]
     if session["email"] != None:
         session.pop("email")
 
@@ -266,13 +268,15 @@ def submitquiz():
     print(qqid)
     print(option)
     results = cur.execute(
-        "Select cast(qid as INT) as qid,marks,ans from questions where examid = '"+test_id+"'")
+        "Select cast(qid as INT) as qid,uid,marks,ans from questions where examid = '"+test_id+"'")
+
     if results > 0:
         datas = cur.fetchall()
         for i in datas:
             qid.append(i["qid"])
             ans.append(i["ans"])
             marks.append(i["marks"])
+            cuid = i["uid"]
         print("QID FROM DATABASE:", qid)
         print("ANS FROM DATABASE:", ans)
         print("MARKS FROM DATABASE:", marks)
@@ -285,8 +289,8 @@ def submitquiz():
             totalmarks += t
 
         cur2 = mysql.connection.cursor()
-        results2 = cur2.execute("INSERT INTO results values(%s,%s,%s)",
-                                (session.get('email'), test_id, totalmarks))
+        results2 = cur2.execute("INSERT INTO results values(%s,%s,%s,%s)",
+                                (session.get('email'), test_id, totalmarks, cuid))
 
         mysql.connection.commit()
         if results2 > 0:
@@ -403,6 +407,120 @@ def updatedquestion():
             "d": data["d"],
             "marks": data["marks"]
         })
+
+
+@app.route("/deletequestion", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def deletequestion():
+    test_id = request.json["ExamId"]
+    email = session["email"]
+    cur = mysql.connection.cursor()
+    results = cur.execute(
+        "Select * from questions where examid = %s and uid = %s", (test_id, email))
+    if results > 0:
+        data = cur.fetchall()
+        qid = []
+        question = []
+        a = []
+        b = []
+        c = []
+        d = []
+        marks = []
+        ans = []
+        for i in data:
+            qid.append(i['qid'])
+            question.append(i['q'])
+            marks.append(i['marks'])
+            a.append(i['a'])
+            b.append(i['b'])
+            c.append(i['c'])
+            d.append(i['d'])
+            ans.append(i['ans'])
+
+        return jsonify({"qid": qid, "q": question, "a": a, "b": b, "c": c, "d": d, "ans": ans, "marks": marks})
+
+
+@app.route("/deletedquestion", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def deletedquestion():
+    testid = request.json["ExamId"]
+    qid = request.json["qid"]
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM questions where qid=%s and examid=%s and uid=%s",
+                (qid, testid, session["email"]))
+    mysql.connection.commit()
+    return ({"response": "data deleted successfully"})
+
+
+@app.route("/results", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def results():
+    testid = request.json["ExamId"]
+    cur = mysql.connection.cursor()
+
+    results = cur.execute(
+        "Select * from results where examid = %s and cuid = %s", (testid, session["email"]))
+
+    if results > 0:
+        data = cur.fetchall()
+        results = []
+        uid = []
+        for i in data:
+            print(i["cuid"])
+            results.append(i["marks"])
+            uid.append(i["uid"])
+        return {"useremail": uid, "results": results}
+    else:
+        return ("No data found"), 404
+
+
+@app.route("/sendresults", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def sendresults():
+    print("hello")
+    if em["To"]:
+        del em["To"]
+        em.clear_content()
+    if em["Subject"]:
+        del em["Subject"]
+        em.clear_content()
+    print("world")
+    testid = request.json["eid"]
+    marks = request.json["marks"]
+    emailto = request.json["senderemail"]
+    body = "Dear Sir/Mam, you have scored %s in exam %s" % (marks, testid)
+
+    context = ssl.create_default_context()
+
+    with SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
+
+        em["To"] = emailto
+        em["Subject"] = "OEPS - RESULTS"
+
+        em.set_content(body)
+        smtp.login(email_sender, email_password)
+        smtp.sendmail(email_sender, emailto, em.as_string())
+        del em["To"]
+
+    return ({"msg": "RESULTS Have been sent successfully"})
+
+
+@app.route("/viewlogs", methods=["POST"])
+@cross_origin(supports_credentials=True)
+def viewweblogs():
+    testid = request.json["ExamId"]
+    cur = mysql.connection.cursor()
+    query = "SELECT * FROM weblog WHERE examid = '"+testid+"'"
+    results = cur.execute(query)
+    if results > 0:
+        data = cur.fetchall()
+        email = []
+        tracker = []
+        for i in data:
+            email.append(i["uid"])
+            tracker.append(i["tracker"])
+        return ({"uid": email, "tracker": tracker})
 
 
 if __name__ == "__main__":
